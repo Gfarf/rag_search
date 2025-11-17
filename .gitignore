@@ -13,3 +13,5 @@ wheels/
 data/
 cache/
 *.pkl
+docmap.pkl
+index.pkl
