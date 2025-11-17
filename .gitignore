@@ -11,3 +11,4 @@ wheels/
 
 # Big data files
 /data/
+/cache/

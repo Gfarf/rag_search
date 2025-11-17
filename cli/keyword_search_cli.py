@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
 
 import argparse
-from lib.keyword_search import search_command
+from lib.utils import full_tokenization
+from lib.inverted_search import InvertedIndex, search_index
 
 MOVIES = "./data/movies.json"
+
+#It should build the inverted index and save it to disk.
+#After doing so, it should print a message containing the first ID of the document for the token 'merida' (which should be document 4651, "Brave").
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Keyword Search CLI")
@@ -12,14 +16,24 @@ def main() -> None:
     search_parser = subparsers.add_parser("search", help="Search movies using BM25")
     search_parser.add_argument("query", type=str, help="Search query")
 
+    subparsers.add_parser("build", help="Build Inverted Index")
+
     args = parser.parse_args()
 
     match args.command:
         case "search":
             print("Searching for:", args.query)
-            results = search_command(args.query)
-            for i, res in enumerate(results, 1):
-                print(f"{i}. {res['title']}")
+            index = InvertedIndex()
+            index.load()
+            tokens = full_tokenization(args.query)
+            results = search_index(index, tokens)
+            for res in results:
+                print(res)
+        case "build":
+            index = InvertedIndex()
+            index.build()
+            index.save()
+            print(f"First id: {index.get_documents("merida")[0]}")
         case _:
             parser.print_help()
 

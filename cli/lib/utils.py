@@ -46,3 +46,10 @@ def stemming(enter: list) -> list:
     for i, item in enumerate(enter):
         enter[i] = stemmer.stem(item)
     return enter
+
+def full_tokenization(enter: str) -> list:
+    enter = remove_punctuation(enter.lower())
+    result = tokenize(enter)
+    result = remove_stop_word(result)
+    result = stemming(result)
+    return result
