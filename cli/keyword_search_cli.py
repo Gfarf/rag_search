@@ -2,7 +2,7 @@
 
 import argparse
 from lib.utils import full_tokenization
-from lib.inverted_search import InvertedIndex, search_index, bm25_idf_command, BM25_K1, bm25_tf_command
+from lib.inverted_search import InvertedIndex, search_index, bm25_idf_command, BM25_K1, bm25_tf_command, BM25_B, BM25_LIMIT
 
 MOVIES = "./data/movies.json"
 
@@ -38,6 +38,11 @@ def main() -> None:
     bm25_tf_parser.add_argument("doc_id", type=int, help="Document ID")
     bm25_tf_parser.add_argument("term", type=str, help="Term to get BM25 TF score for")
     bm25_tf_parser.add_argument("k1", type=float, nargs='?', default=BM25_K1, help="Tunable BM25 K1 parameter")
+    bm25_tf_parser.add_argument("b", type=float, nargs='?', default=BM25_B, help="Tunable BM25 b parameter")
+
+    bm25search_parser = subparsers.add_parser("bm25search", help="Search movies using full BM25 scoring")
+    bm25search_parser.add_argument("query", type=str, help="Search query")
+    bm25search_parser.add_argument('--limit', type=int, nargs='?', default=BM25_LIMIT, help="Tunable number of results")
 
     args = parser.parse_args()
 
@@ -69,14 +74,25 @@ def main() -> None:
             bm25idf = bm25_idf_command(args.term)
             print(f"BM25 IDF score of '{args.term}': {bm25idf:.2f}")
         case "bm25tf":
-            bm25tf = bm25_tf_command(args.doc_id, args.term, args.k1)
+            bm25tf = bm25_tf_command(args.doc_id, args.term, args.k1, args.b)
             print(f"BM25 TF score of '{args.term}' in document '{args.doc_id}': {bm25tf:.2f}")
         case "tfidf":
             print("Calculating tf-idf of:", args.query, "in", args.id)
             index = InvertedIndex()
             index.load()   
             tf_idf = index.calculate_idf(args.query) * index.get_tf(int(args.id), args.query) 
-            print(f"TF-IDF score of '{args.query}' in document '{args.id}': {tf_idf:.2f}")     
+            print(f"TF-IDF score of '{args.query}' in document '{args.id}': {tf_idf:.2f}")    
+        case "bm25search":
+            index = InvertedIndex()
+            index.load() 
+            if args.limit:
+                result = index.bm25_search(args.query, args.limit)
+            else:
+                result = index.bm25_search(args.query, BM25_LIMIT)
+            n = 1   
+            for r in result:
+                print(f"{n}. ({r[0]}) {r[1]} - Score: {r[2]:.2f}")
+                n += 1
         case _:
             parser.print_help()
 
