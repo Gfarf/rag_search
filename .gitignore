@@ -10,5 +10,5 @@ wheels/
 .venv
 
 # Big data files
-/data/
-/cache/
+data/
+cache/
