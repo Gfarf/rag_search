@@ -2,7 +2,7 @@
 
 import argparse
 from lib.utils import full_tokenization
-from lib.inverted_search import InvertedIndex, search_index
+from lib.inverted_search import InvertedIndex, search_index, bm25_idf_command, BM25_K1, bm25_tf_command
 
 MOVIES = "./data/movies.json"
 
@@ -29,6 +29,15 @@ def main() -> None:
     tf_idf_parser.add_argument("id", type=str, help="doc id")
     tf_idf_parser.add_argument("query", type=str, help="Search query")
 
+    bm25_idf_parser = subparsers.add_parser('bm25idf', help="Get BM25 IDF score for a given term")
+    bm25_idf_parser.add_argument("term", type=str, help="Term to get BM25 IDF score for")
+
+    bm25_tf_parser = subparsers.add_parser(
+    "bm25tf", help="Get BM25 TF score for a given document ID and term"
+    )
+    bm25_tf_parser.add_argument("doc_id", type=int, help="Document ID")
+    bm25_tf_parser.add_argument("term", type=str, help="Term to get BM25 TF score for")
+    bm25_tf_parser.add_argument("k1", type=float, nargs='?', default=BM25_K1, help="Tunable BM25 K1 parameter")
 
     args = parser.parse_args()
 
@@ -55,7 +64,13 @@ def main() -> None:
             index = InvertedIndex()
             index.load()
             idf = index.calculate_idf(args.term)
-            print(f"Inverse document frequency of '{args.term}': {idf:.2f}") 
+            print(f"Inverse document frequency of '{args.term}': {idf:.2f}")
+        case "bm25idf":
+            bm25idf = bm25_idf_command(args.term)
+            print(f"BM25 IDF score of '{args.term}': {bm25idf:.2f}")
+        case "bm25tf":
+            bm25tf = bm25_tf_command(args.doc_id, args.term, args.k1)
+            print(f"BM25 TF score of '{args.term}' in document '{args.doc_id}': {bm25tf:.2f}")
         case "tfidf":
             print("Calculating tf-idf of:", args.query, "in", args.id)
             index = InvertedIndex()

@@ -8,6 +8,7 @@ CACHE = os.path.join(PROJECT_ROOT, "cache")
 CACHE_INDEX = os.path.join(CACHE, "index.pkl")
 CACHE_DOCMAP = os.path.join(CACHE, "docmap.pkl")
 CACHE_TERM_FREQUENCIES = os.path.join(CACHE, "term_frequencies.pkl")
+BM25_K1 = 1.5
 
 class InvertedIndex:
 
@@ -74,16 +75,26 @@ class InvertedIndex:
         if len(token) > 1:
             raise Exception("get_tf accepts only one token at a time")
         return self.term_frequencies[doc_id][token[0]]
-        
-#Add a new  method. It should return the times the token appears in the document with the given ID. 
-# If the term doesn't exist in that document, return 0. 
-# Be sure to tokenize the term, but assume that there is only one token. 
-#If there's more than one, raise an exception
+    
+    def get_bm25_tf(self, doc_id: int, term: str, k1: float = BM25_K1) -> float:
+        tf = self.get_tf(doc_id, term)
+        return ((tf * (k1 + 1)) / (tf + k1))        
+
     def calculate_idf(self, term: str) -> float:
         token = full_tokenization(term)
         doc_count = len(self.docmap)
         term_doc_count = len(self.index[token[0]])
         return math.log((doc_count + 1) / (term_doc_count + 1))
+
+    def get_bm25_idf(self, term: str) -> float:
+        token = full_tokenization(term)
+        if len(token) > 1:
+            print("too many arguments")
+            raise Exception
+        doc_count = len(self.docmap)
+        term_doc_count = len(self.index[token[0]])
+        return math.log((doc_count - term_doc_count + 0.5) / (term_doc_count + 0.5) + 1)
+
 
 def search_index(index: InvertedIndex, query: list) -> list:
     results = set()
@@ -100,3 +111,13 @@ def search_index(index: InvertedIndex, query: list) -> list:
         if count > DEFAULT_SEARCH_LIMIT:
             break
     return finals
+
+def bm25_idf_command(term: str) -> float:
+    index = InvertedIndex()
+    index.load()
+    return index.get_bm25_idf(term)
+
+def bm25_tf_command(doc_id: int, term: str, k1: float = BM25_K1) -> float:
+    index = InvertedIndex()
+    index.load()
+    return index.get_bm25_tf(doc_id, term, k1)
