@@ -1,7 +1,8 @@
 from .utils import full_tokenization, load_movies, PROJECT_ROOT, DEFAULT_SEARCH_LIMIT
-from collections import defaultdict
+from collections import defaultdict, Counter
 import os
 import pickle
+import math
 
 CACHE = os.path.join(PROJECT_ROOT, "cache")
 CACHE_INDEX = os.path.join(CACHE, "index.pkl")
@@ -15,13 +16,16 @@ class InvertedIndex:
     #a dictionary mapping tokens (strings) to sets of document IDs (integers).
         self.docmap = defaultdict() 
     #a dictionary mapping document IDs to their full document objects.
-        self.term_frequencies = defaultdict()
+        self.term_frequencies = defaultdict(Counter)
     #a dictionary of document IDs to Counter objects.
 
     def __add_document(self, doc_id: int, text: str):
         list_text = full_tokenization(text)
-        for token in list_text:
+        self.term_frequencies[doc_id] = Counter(list_text)
+        set_text = set(list_text)
+        for token in set_text:
             self.index[token].add(doc_id)
+
 
     #Tokenize the input text, then add each token to the index with the document ID.
 
@@ -64,6 +68,22 @@ class InvertedIndex:
             self.docmap = pickle.load(f) 
         with open(CACHE_TERM_FREQUENCIES, 'rb') as f:
             self.term_frequencies = pickle.load(f) 
+
+    def get_tf(self, doc_id: int, term: str) -> int:
+        token = full_tokenization(term)
+        if len(token) > 1:
+            raise Exception("get_tf accepts only one token at a time")
+        return self.term_frequencies[doc_id][token[0]]
+        
+#Add a new  method. It should return the times the token appears in the document with the given ID. 
+# If the term doesn't exist in that document, return 0. 
+# Be sure to tokenize the term, but assume that there is only one token. 
+#If there's more than one, raise an exception
+    def calculate_idf(self, term: str) -> float:
+        token = full_tokenization(term)
+        doc_count = len(self.docmap)
+        term_doc_count = len(self.index[token[0]])
+        return math.log((doc_count + 1) / (term_doc_count + 1))
 
 def search_index(index: InvertedIndex, query: list) -> list:
     results = set()

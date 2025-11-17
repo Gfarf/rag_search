@@ -18,6 +18,14 @@ def main() -> None:
 
     subparsers.add_parser("build", help="Build Inverted Index")
 
+    tf_parser = subparsers.add_parser("tf", help="Search term frequencies in doc")
+    tf_parser.add_argument("id", type=str, help="doc id")
+    tf_parser.add_argument("query", type=str, help="Search query")
+
+    idf_parser = subparsers.add_parser("idf", help="Give idf for term")
+    idf_parser.add_argument("term", type=str, help="term which frequency is desired")
+
+
     args = parser.parse_args()
 
     match args.command:
@@ -33,7 +41,17 @@ def main() -> None:
             index = InvertedIndex()
             index.build()
             index.save()
-            print(f"First id: {index.get_documents("merida")[0]}")
+        case "tf":
+            print("Searching for term frequency of:", args.query, "in", args.id)
+            index = InvertedIndex()
+            index.load()
+            print(index.get_tf(int(args.id), args.query)) 
+        case "idf":
+            print("calculatind idf for:", args.term)
+            index = InvertedIndex()
+            index.load()
+            idf = index.calculate_idf(args.term)
+            print(f"Inverse document frequency of '{args.term}': {idf:.2f}")       
         case _:
             parser.print_help()
 
